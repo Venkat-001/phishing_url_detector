@@ -23,7 +23,7 @@ Feature Parsing: tldextract
 Model Storage: joblib
 
 ⚙️ Setup
-git clone https://github.com/Venkat-001/phishing_URL_detection.git
+git clone https://github.com/Venkat-001/phishing_url_detection.git
 cd phishing_URL_detection
 python -m venv venv
 venv\Scripts\activate
