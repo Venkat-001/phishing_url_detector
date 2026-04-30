@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phishing URL Detection</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+  * { font-family: 'Inter', sans-serif; }
+
+  /* Threat Meter */
+  .gauge-container { position: relative; width: 160px; height: 80px; overflow: hidden; margin: auto; }
+  .gauge-bg { width: 160px; height: 80px; border-radius: 80px 80px 0 0; background: conic-gradient(from 180deg at 50% 100%, #22c55e 0deg, #eab308 90deg, #ef4444 180deg); }
+  .gauge-cover { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 100px; height: 50px; background: #1f2937; border-radius: 50px 50px 0 0; }
+  .gauge-needle { position: absolute; bottom: 0; left: 50%; width: 3px; height: 70px; background: white; transform-origin: bottom center; border-radius: 3px; transition: transform 1s ease; }
+
+  /* Spinner */
+  .spin { animation: spin 1s linear infinite; }
+  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+  /* Counter animation */
+  .counter { transition: all 0.3s; }
+
+  /* Feature breakdown row */
+  .feature-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px; }
+
+  /* Quiz */
+  .quiz-option { cursor: pointer; padding: 8px 14px; border-radius: 8px; border: 2px solid #4b5563; transition: all 0.2s; font-size: 13px; }
+  .quiz-option:hover { border-color: #6366f1; }
+  .quiz-correct { border-color: #22c55e !important; background: rgba(34,197,94,0.1); }
+  .quiz-wrong { border-color: #ef4444 !important; background: rgba(239,68,68,0.1); }
+
+  /* Dark/Light mode */
+  body.light { background-color: #f3f4f6; color: #111827; }
+  body.light header { background-color: #e5e7eb; }
+  body.light section { background-color: #f9fafb; }
+  body.light .bg-gray-800 { background-color: #e5e7eb !important; }
+  body.light .bg-gray-900 { background-color: #f3f4f6 !important; }
+  body.light .text-gray-300 { color: #374151 !important; }
+  body.light .text-gray-400 { color: #4b5563 !important; }
+  body.light .border-gray-700 { border-color: #d1d5db !important; }
+  body.light .border-gray-600 { border-color: #9ca3af !important; }
+  body.light input { background-color: #fff !important; color: #111 !important; }
+  body.light textarea { background-color: #fff !important; color: #111 !important; }
+
+  /* History item */
+  .history-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-radius: 8px; background: rgba(255,255,255,0.05); margin-bottom: 6px; font-size: 12px; }
+</style>
+</head>
+<body class="bg-gray-900 font-sans text-gray-200">
+
+<!-- HEADER -->
+<header class="bg-gray-800 shadow-md">
+  <div class="mx-auto max-w-screen-2xl px-4 md:px-8 py-4 flex items-center justify-between">
+    <a href="/" class="flex items-center gap-2 text-2xl font-bold text-indigo-400">
+      <svg width="40" height="40" viewBox="0 0 95 94" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+        <path d="M96 0V47L48 94H0V47L48 0H96Z" />
+      </svg>
+      Phishing URL Detector
+    </a>
+    <nav class="hidden lg:flex gap-6 text-gray-300 font-semibold items-center">
+      <button onclick="toggleFeatures()" class="hover:text-indigo-400 focus:outline-none">Features</button>
+      <a href="#how-it-works" class="hover:text-indigo-400">How It Works</a>
+      <a href="#awareness" class="hover:text-indigo-400">Awareness</a>
+      <a href="#quiz" class="hover:text-indigo-400">Quiz</a>
+      <a href="#feedback" class="hover:text-indigo-400">Feedback</a>
+      <!-- Dark/Light Toggle -->
+      <button onclick="toggleTheme()" id="themeBtn"
+        class="flex items-center gap-1 px-3 py-1 rounded-lg border border-gray-600 text-gray-300 hover:border-indigo-400 text-sm transition">
+        🌙 Dark
+      </button>
+    </nav>
+  </div>
+</header>
+
+<!-- FEATURES MODAL -->
+<div id="featuresModal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex justify-center items-start pt-20 px-4 overflow-auto z-50">
+  <div class="bg-gray-900 text-gray-200 p-6 rounded-lg shadow-lg max-w-4xl w-full relative">
+    <button onclick="toggleFeatures()" class="absolute top-2 right-2 text-gray-400 hover:text-white text-2xl font-bold">&times;</button>
+    <h2 class="text-2xl font-bold text-indigo-400 mb-4">How to Handle Phishing URLs</h2>
+    <div class="space-y-4 text-gray-300 text-sm leading-relaxed max-h-[70vh] overflow-y-auto">
+      <p>If you identify a phishing URL, the most important actions are to avoid interacting with it, report it to authorities, and take protective measures if you already clicked it.</p>
+      <h3 class="font-semibold text-indigo-400">1. If You Have NOT Clicked the Link</h3>
+      <ul class="list-disc list-inside"><li>Do not click or interact with the link.</li><li>Delete the message immediately.</li><li>Report to NCSC.GOV.UK</li></ul>
+      <h3 class="font-semibold text-indigo-400">2. If You DID Click the Link</h3>
+      <ul class="list-disc list-inside"><li>Close the page immediately.</li><li>Disconnect from the internet.</li><li>Run a full antivirus scan.</li><li>Change passwords for affected accounts.</li><li>Clear browser cache and cookies.</li></ul>
+      <h3 class="font-semibold text-indigo-400">3. How to Report</h3>
+      <ul class="list-disc list-inside"><li>Forward suspicious emails to <code>report@phishing.gov.uk</code></li><li>Forward suspicious texts to 7726.</li><li>Report to Google Safe Browsing.</li></ul>
+      <h3 class="font-semibold text-indigo-400">Signs of a Phishing Link</h3>
+      <ul class="list-disc list-inside"><li>Mismatched domains (e.g., <code>micros0ft.com</code>).</li><li>URL shorteners hiding the true destination.</li><li>Urgent language: "Your account will be suspended".</li></ul>
+    </div>
+  </div>
+</div>
+
+<!-- HERO SECTION -->
+<section class="bg-gray-900 text-white">
+  <div class="mx-auto max-w-screen-2xl px-4 md:px-8 py-20 flex flex-col lg:flex-row items-center gap-10">
+    <div class="lg:w-1/2 space-y-6">
+      <h1 class="text-4xl md:text-5xl font-bold text-indigo-400">Stay Safe Online</h1>
+      <p class="text-lg md:text-xl text-gray-300">Detect phishing URLs instantly using AI-powered machine learning. Choose your model and scan any URL in real time.</p>
+      <a href="#url-check" class="bg-indigo-500 text-white font-bold px-6 py-3 rounded-lg shadow hover:bg-indigo-600 inline-block">Check URL Now</a>
+    </div>
+    <div class="lg:w-1/2">
+      <img src="https://png.pngtree.com/background/20250106/original/pngtree-a-hackers-use-computer-picture-image_15824759.jpg" class="rounded-lg shadow-2xl" alt="Ethical Hacker">
+    </div>
+  </div>
+
+  <!-- STATS COUNTERS -->
+  <div class="mx-auto max-w-screen-xl px-4 md:px-8 pb-16 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+    <div class="bg-gray-800 rounded-xl p-6 shadow">
+      <p class="text-3xl font-black text-indigo-400" id="cnt-trained">0</p>
+      <p class="text-gray-400 text-sm mt-1">URLs Trained On</p>
+    </div>
+    <div class="bg-gray-800 rounded-xl p-6 shadow">
+      <p class="text-3xl font-black text-green-400" id="cnt-scanned">0</p>
+      <p class="text-gray-400 text-sm mt-1">URLs Scanned</p>
+    </div>
+    <div class="bg-gray-800 rounded-xl p-6 shadow">
+      <p class="text-3xl font-black text-red-400" id="cnt-phishing">0</p>
+      <p class="text-gray-400 text-sm mt-1">Phishing Detected</p>
+    </div>
+    <div class="bg-gray-800 rounded-xl p-6 shadow">
+      <p class="text-3xl font-black text-yellow-400" id="cnt-accuracy">0%</p>
+      <p class="text-gray-400 text-sm mt-1">Model Accuracy</p>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section id="how-it-works" class="bg-gray-800 py-16">
+  <div class="mx-auto max-w-screen-xl px-4 md:px-8 text-center space-y-10">
+    <h2 class="text-3xl font-bold text-indigo-400">How It Works</h2>
+    <div class="grid md:grid-cols-3 gap-8">
+      <div class="bg-gray-900 p-8 rounded-xl shadow space-y-4">
+        <div class="w-14 h-14 bg-indigo-500 rounded-full flex items-center justify-center mx-auto text-2xl font-black">1</div>
+        <h3 class="font-bold text-indigo-400 text-lg">Enter URL</h3>
+        <p class="text-gray-400 text-sm">Paste any suspicious URL into the input field and select your preferred machine learning model.</p>
+      </div>
+      <div class="bg-gray-900 p-8 rounded-xl shadow space-y-4">
+        <div class="w-14 h-14 bg-indigo-500 rounded-full flex items-center justify-center mx-auto text-2xl font-black">2</div>
+        <h3 class="font-bold text-indigo-400 text-lg">ML Analysis</h3>
+        <p class="text-gray-400 text-sm">The system extracts 15 lexical features from the URL and runs them through Random Forest and/or XGBoost models.</p>
+      </div>
+      <div class="bg-gray-900 p-8 rounded-xl shadow space-y-4">
+        <div class="w-14 h-14 bg-indigo-500 rounded-full flex items-center justify-center mx-auto text-2xl font-black">3</div>
+        <h3 class="font-bold text-indigo-400 text-lg">Get Result</h3>
+        <p class="text-gray-400 text-sm">Receive an instant prediction — Safe or Phishing — along with a confidence score and feature breakdown.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- URL CHECK SECTION -->
+<section id="url-check" class="bg-gray-900 py-16">
+  <div class="mx-auto max-w-screen-xl px-4 md:px-8 flex flex-col lg:flex-row gap-12">
+    <div class="lg:w-2/3 space-y-6">
+      <h2 class="text-2xl font-bold text-indigo-400">Phishing URL Detection</h2>
+      <p class="text-gray-300">Paste a suspicious URL below and check if it might be a phishing attempt.</p>
+
+      <!-- MODEL SELECTION -->
+      <div class="space-y-2">
+        <p class="text-sm font-semibold text-gray-400 uppercase tracking-wider">Select Detection Model</p>
+        <div class="flex flex-wrap gap-3">
+          <button id="btn-rf" onclick="selectModel('rf')"
+            class="flex items-center gap-2 px-5 py-2 rounded-lg border-2 border-gray-600 text-gray-300 hover:border-indigo-400 hover:text-indigo-400 transition font-semibold text-sm">
+            🌲 Random Forest
+          </button>
+          <button id="btn-xgb" onclick="selectModel('xgb')"
+            class="flex items-center gap-2 px-5 py-2 rounded-lg border-2 border-gray-600 text-gray-300 hover:border-yellow-400 hover:text-yellow-400 transition font-semibold text-sm">
+            ⚡ XGBoost
+          </button>
+          <button id="btn-both" onclick="selectModel('both')"
+            class="flex items-center gap-2 px-5 py-2 rounded-lg border-2 border-gray-600 text-gray-300 hover:border-green-400 hover:text-green-400 transition font-semibold text-sm">
+            📊 Compare Both
+          </button>
+        </div>
+        <p id="model-hint" class="text-xs text-gray-500 mt-1">No model selected — please select one above</p>
+      </div>
+
+      <!-- URL INPUT -->
+      <div class="flex flex-col sm:flex-row gap-4">
+        <input id="urlInput" type="text" placeholder="Enter URL here or paste and press Enter..."
+          class="flex-1 px-4 py-3 rounded-lg bg-gray-800 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-400 text-white"
+          onkeydown="if(event.key==='Enter') checkURL()">
+        <button onclick="checkURL()" class="bg-indigo-500 text-white px-6 py-3 rounded-lg hover:bg-indigo-600 font-semibold">Check</button>
+        <button onclick="clearAll()" class="bg-gray-700 text-gray-300 px-4 py-3 rounded-lg hover:bg-gray-600 font-semibold text-sm">Clear</button>
+      </div>
+
+      <!-- ERROR -->
+      <div id="error-msg" class="hidden text-red-400 font-semibold text-sm"></div>
+
+      <!-- LOADING -->
+      <div id="loading" class="hidden flex items-center gap-3 text-indigo-400 font-semibold">
+        <svg class="w-6 h-6 spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+        </svg>
+        Analysing URL with machine learning models...
+      </div>
+
+      <!-- RESULTS -->
+      <div id="result-section" class="hidden space-y-4">
+
+        <!-- THREAT METER -->
+        <div id="threat-meter-box" class="bg-gray-800 rounded-xl p-6 text-center border border-gray-700 space-y-2">
+          <p class="text-sm font-semibold text-gray-400 uppercase tracking-wider">Threat Level</p>
+          <div class="gauge-container">
+            <div class="gauge-bg"></div>
+            <div class="gauge-cover"></div>
+            <div class="gauge-needle" id="gauge-needle" style="transform: rotate(-90deg) translateX(-50%)"></div>
+          </div>
+          <p id="threat-label" class="font-bold text-lg mt-2"></p>
+        </div>
+
+        <!-- RF Result -->
+        <div id="rf-result" class="hidden bg-gray-800 rounded-lg p-5 space-y-3 border border-gray-700">
+          <div class="flex items-center justify-between">
+            <p class="font-semibold text-indigo-400 text-lg">🌲 Random Forest</p>
+            <span id="rf-badge" class="text-sm font-bold px-3 py-1 rounded-full"></span>
+          </div>
+          <div class="w-full bg-gray-700 rounded-full h-4 overflow-hidden">
+            <div id="rf-bar" class="h-4 rounded-full transition-all duration-1000" style="width:0%"></div>
+          </div>
+          <p class="text-sm text-gray-400">Confidence Score: <span id="rf-conf-text" class="text-white font-bold text-base"></span></p>
+        </div>
+
+        <!-- XGBoost Result -->
+        <div id="xgb-result" class="hidden bg-gray-800 rounded-lg p-5 space-y-3 border border-gray-700">
+          <div class="flex items-center justify-between">
+            <p class="font-semibold text-yellow-400 text-lg">⚡ XGBoost</p>
+            <span id="xgb-badge" class="text-sm font-bold px-3 py-1 rounded-full"></span>
+          </div>
+          <div class="w-full bg-gray-700 rounded-full h-4 overflow-hidden">
+            <div id="xgb-bar" class="h-4 rounded-full transition-all duration-1000" style="width:0%"></div>
+          </div>
+          <p class="text-sm text-gray-400">Confidence Score: <span id="xgb-conf-text" class="text-white font-bold text-base"></span></p>
+        </div>
+
+        <!-- FEATURE BREAKDOWN -->
+        <div id="feature-box" class="bg-gray-800 rounded-xl p-5 border border-gray-700 space-y-2">
+          <p class="font-semibold text-indigo-400 mb-2">🔍 URL Feature Breakdown</p>
+          <div id="feature-list"></div>
+        </div>
+
+        <!-- VERDICT -->
+        <div id="verdict-box" class="hidden bg-gray-800 rounded-lg p-5 text-center border border-gray-700 space-y-1">
+          <p class="text-sm text-gray-400 uppercase tracking-wider font-semibold">Final Verdict</p>
+          <p id="verdict-text" class="text-xl font-black"></p>
+          <p id="verdict-sub" class="text-sm text-gray-400"></p>
+        </div>
+
+      </div>
+
+      <!-- RECENT SCANS HISTORY -->
+      <div id="history-box" class="hidden space-y-2">
+        <p class="text-sm font-semibold text-gray-400 uppercase tracking-wider">Recent Scans</p>
+        <div id="history-list"></div>
+      </div>
+
+    </div>
+
+    <!-- SIDEBAR -->
+    <div class="lg:w-1/3 space-y-6">
+      <div class="bg-gray-800 p-6 rounded-lg shadow space-y-4 sticky top-20">
+        <h3 class="text-lg font-bold text-indigo-400">Phishing Awareness</h3>
+        <p class="text-gray-300">Phishing is a cyber attack where attackers trick you into revealing sensitive information.</p>
+        <ul class="list-disc list-inside text-gray-400 space-y-1">
+          <li>Check the URL carefully</li>
+          <li>Never share passwords or OTPs</li>
+          <li>Enable 2FA on important accounts</li>
+          <li>Look for HTTPS</li>
+          <li>Verify sender identity</li>
+        </ul>
+      </div>
+
+      <!-- MODEL COMPARISON -->
+      <div class="bg-gray-800 p-6 rounded-lg shadow space-y-4">
+        <h3 class="text-lg font-bold text-indigo-400">📊 Model Comparison</h3>
+        <div class="space-y-3">
+          <div>
+            <div class="flex justify-between text-sm mb-1">
+              <span class="text-gray-300">🌲 Random Forest</span>
+              <span class="text-indigo-400 font-bold">92.08%</span>
+            </div>
+            <div class="w-full bg-gray-700 rounded-full h-3">
+              <div class="h-3 rounded-full bg-indigo-500" style="width:92.08%"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex justify-between text-sm mb-1">
+              <span class="text-gray-300">⚡ XGBoost</span>
+              <span class="text-yellow-400 font-bold">91.15%</span>
+            </div>
+            <div class="w-full bg-gray-700 rounded-full h-3">
+              <div class="h-3 rounded-full bg-yellow-500" style="width:91.15%"></div>
+            </div>
+          </div>
+          <p class="text-xs text-gray-500">Based on 549,346 URLs — 80/20 train-test split</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- AWARENESS SECTION -->
+<section id="awareness" class="py-16 bg-gray-800">
+  <div class="mx-auto max-w-screen-xl px-4 md:px-8 text-center space-y-8">
+    <h2 class="text-3xl font-bold text-indigo-400">Why Phishing Matters</h2>
+    <p class="text-gray-400 max-w-2xl mx-auto">Phishing attacks cost individuals and companies millions every year.</p>
+    <div class="grid md:grid-cols-3 gap-8">
+      <div class="bg-gray-900 p-6 rounded-lg shadow hover:shadow-lg transition">
+        <h3 class="font-bold text-indigo-400 text-xl mb-2">Definition</h3>
+        <p class="text-gray-300">Phishing is a scam where attackers pretend to be trusted entities to steal your information.</p>
+      </div>
+      <div class="bg-gray-900 p-6 rounded-lg shadow hover:shadow-lg transition">
+        <h3 class="font-bold text-indigo-400 text-xl mb-2">Statistics</h3>
+        <p class="text-gray-300">Over 75% of cyber attacks involve phishing. Losses exceeded $54 million in 2020 alone.</p>
+      </div>
+      <div class="bg-gray-900 p-6 rounded-lg shadow hover:shadow-lg transition">
+        <h3 class="font-bold text-indigo-400 text-xl mb-2">Tips</h3>
+        <p class="text-gray-300">Always verify links, never click suspicious attachments, and enable two-factor authentication.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- QUIZ SECTION -->
+<section id="quiz" class="py-16 bg-gray-900">
+  <div class="mx-auto max-w-screen-md px-4 md:px-8 space-y-8">
+    <div class="text-center space-y-2">
+      <h2 class="text-3xl font-bold text-indigo-400">🎯 Phishing Quiz</h2>
+      <p class="text-gray-400">Test your ability to spot phishing URLs!</p>
+    </div>
+    <div id="quiz-container" class="space-y-6"></div>
+    <div class="text-center">
+      <button onclick="submitQuiz()" class="bg-indigo-500 text-white font-bold px-8 py-3 rounded-lg hover:bg-indigo-600">Submit Answers</button>
+      <p id="quiz-score" class="mt-4 text-lg font-bold text-indigo-400 hidden"></p>
+    </div>
+  </div>
+</section>
+
+<!-- FEEDBACK SECTION -->
+<section id="feedback" class="bg-gray-800 py-16">
+  <div class="mx-auto max-w-screen-md px-4 md:px-8 text-white space-y-8">
+    <h2 class="text-3xl font-bold text-center text-indigo-400">Send Us Feedback</h2>
+    <form id="feedbackForm" class="space-y-4 bg-gray-900 p-6 rounded-lg shadow">
+      <input type="text" name="name" placeholder="Your Name" class="w-full px-4 py-3 rounded-lg bg-gray-800 border border-gray-600 text-white">
+      <input type="email" name="email" placeholder="Your Email" class="w-full px-4 py-3 rounded-lg bg-gray-800 border border-gray-600 text-white">
+      <textarea name="message" rows="4" placeholder="Your Feedback" class="w-full px-4 py-3 rounded-lg bg-gray-800 border border-gray-600 text-white"></textarea>
+      <button type="submit" class="w-full bg-indigo-500 text-white font-bold px-6 py-3 rounded-lg hover:bg-indigo-600">Submit Feedback</button>
+      <p id="feedbackMsg" class="text-center mt-2 text-green-400"></p>
+    </form>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="bg-black text-gray-400 py-6 text-center">
+  Created by Venkata Ramana Pathakoti © 2026. All rights reserved.
+</footer>
+
+<script>
+// ── THEME ──────────────────────────────────────────
+let isDark = true;
+function toggleTheme() {
+  isDark = !isDark;
+  document.body.classList.toggle('light');
+  document.getElementById('themeBtn').textContent = isDark ? '🌙 Dark' : '☀️ Light';
+}
+
+// ── COUNTERS ───────────────────────────────────────
+function animateCounter(id, target, suffix='') {
+  let current = 0;
+  const step = Math.ceil(target / 80);
+  const timer = setInterval(() => {
+    current = Math.min(current + step, target);
+    document.getElementById(id).textContent = current.toLocaleString() + suffix;
+    if (current >= target) clearInterval(timer);
+  }, 20);
+}
+window.onload = () => {
+  animateCounter('cnt-trained', 549346);
+  animateCounter('cnt-scanned', sessionScanned);
+  animateCounter('cnt-phishing', sessionPhishing);
+  document.getElementById('cnt-accuracy').textContent = '92.08%';
+  buildQuiz();
+};
+
+// ── SESSION STATS ──────────────────────────────────
+let sessionScanned = 0;
+let sessionPhishing = 0;
+let scanHistory = [];
+
+// ── MODEL SELECTION ────────────────────────────────
+let selectedModel = null;
+function selectModel(model) {
+  selectedModel = model;
+  const configs = {
+    rf:   { border: 'border-indigo-400', text: 'text-indigo-400', label: '🌲 Random Forest selected' },
+    xgb:  { border: 'border-yellow-400', text: 'text-yellow-400', label: '⚡ XGBoost selected' },
+    both: { border: 'border-green-400',  text: 'text-green-400',  label: '📊 Compare Both selected' }
+  };
+  ['rf','xgb','both'].forEach(m => {
+    document.getElementById('btn-' + m).className =
+      'flex items-center gap-2 px-5 py-2 rounded-lg border-2 border-gray-600 text-gray-300 hover:border-indigo-400 hover:text-indigo-400 transition font-semibold text-sm';
+  });
+  const btn = document.getElementById('btn-' + model);
+  btn.classList.remove('border-gray-600','text-gray-300');
+  btn.classList.add(configs[model].border, configs[model].text);
+  document.getElementById('model-hint').textContent = configs[model].label;
+}
+
+// ── CLEAR ──────────────────────────────────────────
+function clearAll() {
+  document.getElementById('urlInput').value = '';
+  document.getElementById('result-section').classList.add('hidden');
+  document.getElementById('error-msg').classList.add('hidden');
+  document.getElementById('loading').classList.add('hidden');
+  document.getElementById('rf-bar').style.width = '0%';
+  document.getElementById('xgb-bar').style.width = '0%';
+}
+
+// ── RESET RESULTS ──────────────────────────────────
+function resetResults() {
+  ['result-section','rf-result','xgb-result','verdict-box','error-msg','loading'].forEach(id => {
+    document.getElementById(id).classList.add('hidden');
+  });
+  document.getElementById('rf-bar').style.width = '0%';
+  document.getElementById('xgb-bar').style.width = '0%';
+}
+
+// ── CHECK URL ──────────────────────────────────────
+function checkURL() {
+  const url = document.getElementById('urlInput').value.trim();
+  if (!url) {
+    document.getElementById('error-msg').textContent = '⚠️ Please enter a URL.';
+    document.getElementById('error-msg').classList.remove('hidden');
+    return;
+  }
+  if (!selectedModel) {
+    document.getElementById('error-msg').textContent = '⚠️ Please select a detection model first.';
+    document.getElementById('error-msg').classList.remove('hidden');
+    return;
+  }
+  resetResults();
+  document.getElementById('loading').classList.remove('hidden');
+
+  const formData = new FormData();
+  formData.append('url', url);
+  formData.append('model', selectedModel);
+
+  fetch('/', { method: 'POST', body: formData })
+    .then(res => res.json())
+    .then(data => {
+      document.getElementById('loading').classList.add('hidden');
+      if (data.error) {
+        document.getElementById('error-msg').textContent = '⚠️ ' + data.error;
+        document.getElementById('error-msg').classList.remove('hidden');
+        return;
+      }
+      showResults(url, data);
+    })
+    .catch(() => {
+      document.getElementById('loading').classList.add('hidden');
+      document.getElementById('error-msg').textContent = '⚠️ Error connecting to server. Make sure Flask is running.';
+      document.getElementById('error-msg').classList.remove('hidden');
+    });
+}
+
+// ── SHOW RESULTS ───────────────────────────────────
+function showResults(url, data) {
+  document.getElementById('result-section').classList.remove('hidden');
+
+  let overallSafe = true;
+  let maxConf = 0;
+
+  if (data.rf_label !== undefined) {
+    document.getElementById('rf-result').classList.remove('hidden');
+    const safe = data.rf_label === 'Safe';
+    if (!safe) overallSafe = false;
+    maxConf = Math.max(maxConf, data.rf_conf);
+    const badge = document.getElementById('rf-badge');
+    badge.textContent = safe ? '✅ Safe' : '🚨 Phishing';
+    badge.className = `text-sm font-bold px-3 py-1 rounded-full ${safe ? 'bg-green-800 text-green-300' : 'bg-red-800 text-red-300'}`;
+    document.getElementById('rf-conf-text').textContent = data.rf_conf + '%';
+    setTimeout(() => {
+      const bar = document.getElementById('rf-bar');
+      bar.style.width = data.rf_conf + '%';
+      bar.style.backgroundColor = safe ? '#22c55e' : '#ef4444';
+    }, 100);
+  }
+
+  if (data.xgb_label !== undefined) {
+    document.getElementById('xgb-result').classList.remove('hidden');
+    const safe = data.xgb_label === 'Safe';
+    if (!safe) overallSafe = false;
+    maxConf = Math.max(maxConf, data.xgb_conf);
+    const badge = document.getElementById('xgb-badge');
+    badge.textContent = safe ? '✅ Safe' : '🚨 Phishing';
+    badge.className = `text-sm font-bold px-3 py-1 rounded-full ${safe ? 'bg-green-800 text-green-300' : 'bg-red-800 text-red-300'}`;
+    document.getElementById('xgb-conf-text').textContent = data.xgb_conf + '%';
+    setTimeout(() => {
+      const bar = document.getElementById('xgb-bar');
+      bar.style.width = data.xgb_conf + '%';
+      bar.style.backgroundColor = safe ? '#22c55e' : '#ef4444';
+    }, 100);
+  }
+
+  // Threat Meter
+  updateGauge(overallSafe ? 100 - maxConf : maxConf, overallSafe);
+
+  // Feature Breakdown
+  showFeatureBreakdown(url);
+
+  // Verdict
+  const verdictBox = document.getElementById('verdict-box');
+  const verdictText = document.getElementById('verdict-text');
+  const verdictSub = document.getElementById('verdict-sub');
+  verdictBox.classList.remove('hidden');
+
+  if (data.rf_label !== undefined && data.xgb_label !== undefined) {
+    const rfSafe = data.rf_label === 'Safe';
+    const xgbSafe = data.xgb_label === 'Safe';
+    if (rfSafe && xgbSafe) {
+      verdictText.textContent = '✅ URL Appears Safe';
+      verdictText.className = 'text-xl font-black text-green-400';
+      verdictSub.textContent = 'Both models agree this URL is likely legitimate.';
+    } else if (!rfSafe && !xgbSafe) {
+      verdictText.textContent = '🚨 Phishing Detected!';
+      verdictText.className = 'text-xl font-black text-red-400';
+      verdictSub.textContent = 'Both models flagged this as phishing. Do not proceed.';
+    } else {
+      verdictText.textContent = '⚠️ Inconclusive — Proceed with Caution';
+      verdictText.className = 'text-xl font-black text-yellow-400';
+      verdictSub.textContent = 'Models disagree. Exercise caution before visiting this URL.';
+    }
+  } else if (data.rf_label !== undefined) {
+    const safe = data.rf_label === 'Safe';
+    verdictText.textContent = safe ? '✅ URL Appears Safe' : '🚨 Phishing Detected!';
+    verdictText.className = `text-xl font-black ${safe ? 'text-green-400' : 'text-red-400'}`;
+    verdictSub.textContent = safe ? 'Random Forest classifies this URL as legitimate.' : 'Random Forest flagged this URL as phishing.';
+  } else {
+    const safe = data.xgb_label === 'Safe';
+    verdictText.textContent = safe ? '✅ URL Appears Safe' : '🚨 Phishing Detected!';
+    verdictText.className = `text-xl font-black ${safe ? 'text-green-400' : 'text-red-400'}`;
+    verdictSub.textContent = safe ? 'XGBoost classifies this URL as legitimate.' : 'XGBoost flagged this URL as phishing.';
+  }
+
+  // Session stats
+  sessionScanned++;
+  if (!overallSafe) sessionPhishing++;
+  document.getElementById('cnt-scanned').textContent = sessionScanned.toLocaleString();
+  document.getElementById('cnt-phishing').textContent = sessionPhishing.toLocaleString();
+
+  // History
+  addHistory(url, overallSafe, maxConf);
+}
+
+// ── GAUGE ──────────────────────────────────────────
+function updateGauge(threatPercent, safe) {
+  const angle = -90 + (threatPercent / 100) * 180;
+  document.getElementById('gauge-needle').style.transform = `rotate(${angle}deg) translateX(-50%)`;
+  const label = document.getElementById('threat-label');
+  if (safe) {
+    label.textContent = '🟢 Low Threat';
+    label.className = 'font-bold text-lg text-green-400';
+  } else if (threatPercent < 70) {
+    label.textContent = '🟡 Medium Threat';
+    label.className = 'font-bold text-lg text-yellow-400';
+  } else {
+    label.textContent = '🔴 High Threat';
+    label.className = 'font-bold text-lg text-red-400';
+  }
+}
+
+// ── FEATURE BREAKDOWN ──────────────────────────────
+function showFeatureBreakdown(url) {
+  const urlLower = url.toLowerCase();
+  const features = [
+    { name: 'URL Length', value: url.length, check: url.length > 75, unit: ' chars' },
+    { name: 'HTTPS', value: url.startsWith('https') ? 'Yes' : 'No', check: !url.startsWith('https'), unit: '' },
+    { name: 'Dot Count', value: (url.match(/\./g)||[]).length, check: (url.match(/\./g)||[]).length > 4, unit: '' },
+    { name: 'Hyphen Count', value: (url.match(/-/g)||[]).length, check: (url.match(/-/g)||[]).length > 2, unit: '' },
+    { name: 'Special Characters', value: (url.match(/[^a-zA-Z0-9]/g)||[]).length, check: (url.match(/[^a-zA-Z0-9]/g)||[]).length > 10, unit: '' },
+    { name: '@ Symbol', value: url.includes('@') ? 'Yes' : 'No', check: url.includes('@'), unit: '' },
+    { name: 'IP Address', value: /http[s]?:\/\/\d+\.\d+\.\d+\.\d+/.test(url) ? 'Yes' : 'No', check: /http[s]?:\/\/\d+\.\d+\.\d+\.\d+/.test(url), unit: '' },
+    { name: 'Suspicious Keywords', value: ['login','verify','secure','account','banking','confirm','password'].some(k=>urlLower.includes(k)) ? 'Found' : 'None', check: ['login','verify','secure','account','banking','confirm','password'].some(k=>urlLower.includes(k)), unit: '' },
+  ];
+  const list = document.getElementById('feature-list');
+  list.innerHTML = features.map(f => `
+    <div class="feature-row">
+      <span class="text-gray-300">${f.name}</span>
+      <span class="${f.check ? 'text-red-400' : 'text-green-400'} font-semibold">${f.value}${f.unit} ${f.check ? '⚠️' : '✅'}</span>
+    </div>
+  `).join('');
+}
+
+// ── HISTORY ────────────────────────────────────────
+function addHistory(url, safe, conf) {
+  scanHistory.unshift({ url, safe, conf });
+  if (scanHistory.length > 5) scanHistory.pop();
+  const box = document.getElementById('history-box');
+  const list = document.getElementById('history-list');
+  box.classList.remove('hidden');
+  list.innerHTML = scanHistory.map(h => `
+    <div class="history-item">
+      <span class="text-gray-400 truncate max-w-xs">${h.url}</span>
+      <span class="${h.safe ? 'text-green-400' : 'text-red-400'} font-bold ml-2 whitespace-nowrap">${h.safe ? '✅ Safe' : '🚨 Phishing'} ${h.conf}%</span>
+    </div>
+  `).join('');
+}
+
+// ── QUIZ ───────────────────────────────────────────
+const quizData = [
+  { url: 'https://www.google.com', answer: 'safe', explanation: 'Legitimate Google domain.' },
+  { url: 'http://paypal-secure.update-account.com/signin', answer: 'phishing', explanation: 'Suspicious subdomain mimicking PayPal.' },
+  { url: 'https://www.amazon.com/orders', answer: 'safe', explanation: 'Legitimate Amazon URL.' },
+  { url: 'http://192.168.1.1/banking/login/confirm', answer: 'phishing', explanation: 'IP address used instead of domain name.' },
+  { url: 'http://free-bonus-click.win/lucky/verify', answer: 'phishing', explanation: 'Contains suspicious keywords and unusual TLD.' },
+];
+
+function buildQuiz() {
+  const container = document.getElementById('quiz-container');
+  container.innerHTML = quizData.map((q, i) => `
+    <div class="bg-gray-800 rounded-xl p-5 space-y-3 border border-gray-700">
+      <p class="text-sm text-gray-400 font-semibold">Question ${i+1}</p>
+      <p class="text-white font-mono text-sm break-all">${q.url}</p>
+      <div class="flex gap-3">
+        <button class="quiz-option" id="q${i}-safe" onclick="selectAnswer(${i},'safe')">✅ Safe</button>
+        <button class="quiz-option" id="q${i}-phishing" onclick="selectAnswer(${i},'phishing')">🚨 Phishing</button>
+      </div>
+      <p id="q${i}-explanation" class="text-xs text-gray-500 hidden">${q.explanation}</p>
+    </div>
+  `).join('');
+}
+
+let userAnswers = {};
+function selectAnswer(i, answer) {
+  userAnswers[i] = answer;
+  ['safe','phishing'].forEach(a => {
+    const btn = document.getElementById(`q${i}-${a}`);
+    btn.classList.remove('quiz-correct','quiz-wrong');
+    btn.style.borderColor = '';
+  });
+  document.getElementById(`q${i}-${answer}`).style.borderColor = '#6366f1';
+}
+
+function submitQuiz() {
+  let score = 0;
+  quizData.forEach((q, i) => {
+    const correct = q.answer;
+    const userAns = userAnswers[i];
+    const correctBtn = document.getElementById(`q${i}-${correct}`);
+    correctBtn.classList.add('quiz-correct');
+    if (userAns && userAns !== correct) {
+      document.getElementById(`q${i}-${userAns}`).classList.add('quiz-wrong');
+    }
+    if (userAns === correct) score++;
+    document.getElementById(`q${i}-explanation`).classList.remove('hidden');
+  });
+  const scoreEl = document.getElementById('quiz-score');
+  scoreEl.textContent = `You scored ${score}/${quizData.length} — ${score >= 4 ? '🎉 Excellent! You are phishing aware!' : score >= 2 ? '👍 Good effort! Keep learning.' : '📚 Keep practising to stay safe online!'}`;
+  scoreEl.classList.remove('hidden');
+}
+
+// ── FEATURES MODAL ──────────────────────────────────
+function toggleFeatures() {
+  document.getElementById('featuresModal').classList.toggle('hidden');
+}
+
+// ── FEEDBACK ───────────────────────────────────────
+document.getElementById('feedbackForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+  document.getElementById('feedbackMsg').textContent = '✅ Thank you for your feedback!';
+  this.reset();
+  setTimeout(() => { document.getElementById('feedbackMsg').textContent = ''; }, 3000);
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,100 @@
+/* General body */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #6C63FF, #FF6584);
+    min-height: 100vh;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #fff;
+}
+
+.container {
+    background: rgba(0,0,0,0.85);
+    padding: 40px 50px;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    text-align: center;
+    width: 450px;
+}
+
+h1 {
+    margin-bottom: 30px;
+    font-size: 32px;
+    letter-spacing: 1px;
+}
+
+input[type="text"] {
+    width: 80%;
+    padding: 12px 15px;
+    margin-bottom: 15px;
+    border-radius: 8px;
+    border: none;
+    font-size: 16px;
+}
+
+button {
+    padding: 12px 20px;
+    font-size: 16px;
+    border: none;
+    border-radius: 8px;
+    background-color: #FF6584;
+    color: #fff;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+button:hover {
+    background-color: #6C63FF;
+}
+
+.results {
+    margin-top: 30px;
+    text-align: left;
+}
+
+.model-result {
+    margin-bottom: 20px;
+}
+
+.model-result h3 {
+    margin: 0 0 5px 0;
+}
+
+.model-result span.safe {
+    color: #4CAF50;
+    font-weight: bold;
+}
+
+.model-result span.phishing {
+    color: #FF3B30;
+    font-weight: bold;
+}
+
+/* Confidence bar */
+.bar-container {
+    width: 100%;
+    background-color: rgba(255,255,255,0.2);
+    border-radius: 20px;
+    overflow: hidden;
+    height: 20px;
+    margin-bottom: 5px;
+}
+
+.bar {
+    height: 100%;
+    background-color: #4CAF50;
+    width: 0;
+    animation: fillBar 1s forwards;
+    border-radius: 20px;
+}
+
+.model-result span.phishing ~ .bar-container .bar {
+    background-color: #FF3B30;
+}
+
+@keyframes fillBar {
+    from { width: 0%; }
+    to { width: var(--width); }
+}
